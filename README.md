@@ -48,9 +48,9 @@ Scores are calculated as earned points out of 81 maximum (Critical=32 + High=24 
 
 ### mcp-doctor
 
-Diagnose and repair broken MCP server configurations in `~/.claude/mcp.json`. When MCP servers have broken paths, missing binaries, or unreachable endpoints, they cause EPIPE crashes that prevent Claude Code from starting. This skill identifies the problem servers, disables them, and logs everything.
+Diagnose and repair broken MCP server configurations across all known config sources. When MCP servers have broken paths, missing binaries, or unreachable endpoints, they cause EPIPE crashes that prevent Claude Code or omp from starting. This skill identifies the problem servers, disables them in the correct config file, and logs everything.
 
-The skill runs a portable bash+node diagnostic script that checks each configured server entry: verifies the command binary exists in `PATH` or at its absolute path, confirms Docker is running for `docker` commands, and validates absolute paths in arguments. Each server gets a status of OK, WARN (binary found but arg path missing), FAIL (binary not found), or SKIP (already disabled). On user confirmation, broken servers are disabled in the config with a timestamped log written to `~/.claude/logs/`.
+The script scans all known MCP config locations at both user and project levels: `~/.claude/mcp.json`, `~/.cursor/mcp.json`, `~/.codeium/windsurf/mcp_config.json`, `~/.omp/agent/mcp.json`, plus project-level equivalents and `.vscode/mcp.json`. For each server entry it verifies the command binary exists in `PATH` or at its absolute path, confirms Docker is running for `docker` commands, and validates absolute paths in arguments. Each server gets a status of OK, WARN (binary found but arg path missing), FAIL (binary not found), or SKIP (already disabled). On user confirmation, broken servers are disabled in their respective config file with a timestamped log written to `~/.claude/logs/`.
 
 **Files:**
 - `SKILL.md` — 5-step workflow (diagnose, review, fix, log, restart), status quick reference, common mistakes
