@@ -1,21 +1,37 @@
 #!/usr/bin/env bash
 # mcp_doctor.sh - Diagnose broken MCP server configurations
 # Works on Windows (Git Bash/MSYS2), macOS, and Linux
-# Outputs JSON array of { name, status, reason, command } per server
+# Scans all known MCP config sources (omp, claude, cursor, windsurf, gemini, codex, vscode)
+# Outputs JSON array of { name, status, reason, command, source } per server
 
 set -euo pipefail
 
-CONFIG_FILE="${HOME}/.claude/mcp.json"
-
-if [[ ! -f "$CONFIG_FILE" ]]; then
-   echo '{"error":"Config file not found","path":"'"$CONFIG_FILE"'"}'
-   exit 1
-fi
-
-# Use node for JSON parsing and PATH-based binary lookup (no shell commands)
+# Use node for JSON parsing, multi-source discovery, and PATH-based binary lookup
 node -e '
 const fs = require("fs");
 const path = require("path");
+const os = require("os");
+
+const HOME = os.homedir();
+
+// All known MCP config sources with priority (higher = wins on name conflict)
+const CONFIG_SOURCES = [
+   { name: "omp-user",    priority: 100, path: path.join(HOME, ".omp", "agent", "mcp.json"), format: "mcpServers" },
+   { name: "claude-user",  priority: 80,  path: path.join(HOME, ".claude", "mcp.json"),       format: "mcpServers" },
+   { name: "cursor-user",  priority: 50,  path: path.join(HOME, ".cursor", "mcp.json"),       format: "mcpServers" },
+   { name: "windsurf-user", priority: 50, path: path.join(HOME, ".codeium", "windsurf", "mcp_config.json"), format: "mcpServers" },
+];
+
+// Project-level configs (check cwd)
+const cwd = process.cwd();
+const PROJECT_SOURCES = [
+   { name: "omp-project",    priority: 100, path: path.join(cwd, ".omp", "mcp.json"),       format: "mcpServers" },
+   { name: "claude-project", priority: 80,  path: path.join(cwd, ".claude", "mcp.json"),     format: "mcpServers" },
+   { name: "cursor-project", priority: 50,  path: path.join(cwd, ".cursor", "mcp.json"),     format: "mcpServers" },
+   { name: "vscode-project", priority: 20,  path: path.join(cwd, ".vscode", "mcp.json"),     format: "mcp.servers" },
+];
+
+const ALL_SOURCES = [...CONFIG_SOURCES, ...PROJECT_SOURCES];
 
 function findInPath(cmd) {
    const dirs = (process.env.PATH || "").split(path.delimiter);
@@ -25,12 +41,10 @@ function findInPath(cmd) {
       : [""];
 
    for (const dir of dirs) {
-      // Check with each extension
       for (const ext of exts) {
          const full = path.join(dir, cmd + ext);
          try { fs.accessSync(full, fs.constants.X_OK); return full; } catch {}
       }
-      // Check bare name (handles cases like "npx" on unix)
       if (!isWin) {
          const full = path.join(dir, cmd);
          try { fs.accessSync(full, fs.constants.X_OK); return full; } catch {}
@@ -59,23 +73,25 @@ function checkDocker() {
    }
 }
 
-// Read and parse config
-let config;
-try {
-   config = JSON.parse(fs.readFileSync(process.argv[1], "utf8"));
-} catch (e) {
-   console.log(JSON.stringify({ error: "Failed to parse config", detail: e.message }));
-   process.exit(1);
+function extractServers(filePath, format) {
+   try {
+      const raw = fs.readFileSync(filePath, "utf8");
+      const config = JSON.parse(raw);
+      if (format === "mcpServers") {
+         return config.mcpServers || {};
+      }
+      if (format === "mcp.servers") {
+         return (config.mcp && config.mcp.servers) || {};
+      }
+      return {};
+   } catch {
+      return {};
+   }
 }
 
-const servers = config.mcpServers || {};
-const results = [];
-
-for (const [name, entry] of Object.entries(servers)) {
-   // Skip disabled servers
+function checkServer(name, entry) {
    if (entry.disabled === true) {
-      results.push({ name, status: "SKIP", reason: "Already disabled", command: entry.command || "" });
-      continue;
+      return { name, status: "SKIP", reason: "Already disabled", command: entry.command || "" };
    }
 
    const command = entry.command || "";
@@ -126,8 +142,28 @@ for (const [name, entry] of Object.entries(servers)) {
       }
    }
 
-   results.push({ name, status, reason, command: binaryToCheck });
+   return { name, status, reason, command: binaryToCheck };
 }
 
-console.log(JSON.stringify(results, null, 2));
-' "$CONFIG_FILE"
+// Scan all sources
+const results = [];
+const sourcesFound = [];
+
+for (const src of ALL_SOURCES) {
+   if (!fs.existsSync(src.path)) continue;
+   const servers = extractServers(src.path, src.format);
+   const names = Object.keys(servers);
+   if (names.length === 0) continue;
+
+   sourcesFound.push({ name: src.name, path: src.path, count: names.length });
+
+   for (const [serverName, entry] of Object.entries(servers)) {
+      const result = checkServer(serverName, entry);
+      result.source = src.name;
+      result.configPath = src.path;
+      results.push(result);
+   }
+}
+
+console.log(JSON.stringify({ sources: sourcesFound, servers: results }, null, 2));
+'

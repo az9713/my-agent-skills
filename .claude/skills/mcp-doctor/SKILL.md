@@ -13,7 +13,7 @@ Diagnoses and repairs broken MCP server configurations. Validates that each serv
 
 - omp/Claude Code crashes on startup with EPIPE or connection errors
 - MCP tools are unavailable or timing out
-- After adding/modifying servers in `~/.claude/mcp.json`
+- After adding/modifying servers in any MCP config
 - Periodic health check of all configured servers
 
 **Not for:** MCP protocol-level debugging, server-side logic issues, or auth token problems (those require testing the server itself).
@@ -44,7 +44,11 @@ digraph mcp_doctor {
 bash ~/.claude/skills/mcp-doctor/scripts/mcp_doctor.sh
 ```
 
-Output: JSON array of `{ "name", "status", "reason", "command" }` per server.
+Output: JSON with `sources` (configs found) and `servers` array of `{ name, status, reason, command, source, configPath }`.
+
+The script scans all known MCP config locations:
+- **User-level:** `~/.omp/agent/mcp.json`, `~/.claude/mcp.json`, `~/.cursor/mcp.json`, `~/.codeium/windsurf/mcp_config.json`
+- **Project-level:** `.omp/mcp.json`, `.claude/mcp.json`, `.cursor/mcp.json`, `.vscode/mcp.json`
 
 ### Step 2: Present Results
 
@@ -56,9 +60,9 @@ Format as a table for the user:
 
 ### Step 3: Fix Broken Servers
 
-Ask user: "Should I disable the FAIL servers in `~/.claude/mcp.json`?"
+Ask user: "Should I disable the FAIL servers?"
 
-On confirmation, read the config file and add `"disabled": true` to each FAIL server entry. Preserve existing fields and formatting.
+On confirmation, for each FAIL server, read its `configPath` and add `"disabled": true` to the server entry in the correct config file. Preserve existing fields and formatting.
 
 ### Step 4: Create Log
 
