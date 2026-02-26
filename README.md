@@ -1,6 +1,6 @@
 # my-agent-skills
 
-Twelve personal skills for [Claude Code](https://claude.com/claude-code), plus an example audit report showing the skill-best-practices auditor in action.
+Fourteen personal skills for [Claude Code](https://claude.com/claude-code), plus an example audit report showing the skill-best-practices auditor in action.
 
 ## Skills
 
@@ -124,6 +124,36 @@ Launch a real-time surveillance dashboard for Claude Code agent teams. Monitors 
 
 **Setup:** Run `npm install` in `.claude/skills/surveil/server/` before first use.
 
+### docker-windows
+
+Run Docker containers on Windows with MINGW/MSYS2/Git Bash without silent path mangling, volume mount failures, or flag conversion issues.
+
+The core problem: MINGW automatically converts anything that looks like a Unix path to a Windows path. `-w /work` becomes `-w C:/Program Files/Git/work`, volume mounts get rewritten, and single-letter flags like `-i` can be eaten by the conversion heuristic. These failures are **silent** — Docker starts but produces no output or wrong results. The fix is a single environment variable (`MSYS_NO_PATHCONV=1`) plus a consistent command pattern using `--entrypoint /bin/bash -c '...'`.
+
+The skill covers the canonical Docker run pattern, a key-rules table, what-not-to-do examples, MOOSE-specific gotchas (JIT failures, renamed parameters, missing materials), and a 5-step debugging checklist for diagnosing silent failures.
+
+**Files:**
+- `SKILL.md` — Problem explanation, canonical patterns, MOOSE-specific section, debugging checklist (153 lines)
+
+### moose-simulation
+
+Full lifecycle skill for running MOOSE finite-element simulations on Windows via Docker. Covers prerequisites, input file authoring, Docker execution, output validation, visualization, and README documentation.
+
+Built from lessons learned across 21 successful quickstart cases spanning framework kernels, heat transfer, solid mechanics, Navier-Stokes (finite volume), phase field, porous flow, and electromagnetics. The skill includes:
+
+- **Prerequisites checklist**: Docker Desktop running, `idaholab/moose:latest` image available, input file validated
+- **Input file standards**: naming conventions, header comment blocks, inline comments, required output blocks, mesh sizing guidelines, Docker portability rules (JIT, parameter renames)
+- **Docker execution**: canonical run command with every element explained, success/failure indicators, batch run pattern
+- **Output validation**: required artifacts (`.e` + `.csv`), CSV sanity checks, Exodus field verification
+- **Visualization**: nodal vs element variables, FV (finite volume) handling, multi-block mesh concatenation, plot naming conventions
+- **README template**: physics explanation, input file walkthrough, Docker command, expected results, key takeaways
+- **7 common failure patterns** with exact fixes: path mangling, JIT compilation, PorousFlow materials, renamed parameters, FV parameter names, solver divergence, porosity type
+- **Physics module quick reference** table mapping modules to cases and key MOOSE objects
+- **10-step workflow checklist** for creating a new simulation from scratch
+
+**Files:**
+- `SKILL.md` — 9 sections, 10-step checklist, 466 lines
+
 ## Outputs
 
 ### outputs/skill-audit-report.md
@@ -174,4 +204,6 @@ Skills activate automatically when Claude detects a matching request, or can be 
 /project-workflow         # Plan-Build-Review-Fix cycle
 /testing                  # Testing strategies and patterns
 /surveil                  # Launch agent team dashboard
+/docker-windows           # Docker on Windows without path mangling
+/moose-simulation         # Run MOOSE simulations via Docker
 ```
