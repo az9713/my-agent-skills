@@ -19,7 +19,18 @@ Analyze YouTube videos or local transcript files using Google Gemini API via the
 
 ## Script Location
 
-`C:\Users\simon\Downloads\colab_to_script\yt_analyze.py`
+The script and supporting files are co-located with this skill:
+
+```
+~/.claude/skills/yt-transcript-summary/
+├── SKILL.md
+└── scripts/
+    ├── yt_analyze.py
+    ├── my_prompt.txt
+    └── requirements.txt
+```
+
+**Script dir:** `~/.claude/skills/yt-transcript-summary/scripts/`
 
 ## How to Build the Command
 
@@ -53,7 +64,7 @@ Parse the user's request for these inputs:
 Run the command via `Bash` from the script's directory:
 
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py <args>
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py <args>
 ```
 
 The script writes output to an auto-named `.md` file and prints the path to stderr. After execution, tell the user the output file path.
@@ -62,32 +73,32 @@ The script writes output to an auto-named `.md` file and prints the path to stde
 
 **YouTube URL with default prompt:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www.youtube.com/watch?v=abc123"
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123"
 ```
 
 **Local transcript file:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py --file "/path/to/transcript.txt"
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py --file "/path/to/transcript.txt"
 ```
 
 **Custom inline prompt:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" -p "Extract all code snippets"
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" -p "Extract all code snippets"
 ```
 
 **Built-in preset:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --builtin takeaways
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --builtin takeaways
 ```
 
 **Transcript mode with speakers:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --transcript --speakers "Alice" "Bob"
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --transcript --speakers "Alice" "Bob"
 ```
 
 **Segment analysis:**
 ```bash
-cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --start 01:30 --end 05:00 -p "Summarize this segment"
+cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --start 01:30 --end 05:00 -p "Summarize this segment"
 ```
 
 ## Prerequisites
