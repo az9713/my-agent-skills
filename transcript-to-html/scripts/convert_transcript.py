@@ -210,8 +210,9 @@ def convert(input_path, output_path):
 
     # Title from filename
     basename = os.path.splitext(os.path.basename(input_path))[0]
+    full_path = os.path.abspath(input_path)
     parts.append(f"<h1>Claude Code Transcript</h1>")
-    parts.append(f'<p class="subtitle">{escape(basename)}</p>')
+    parts.append(f'<p class="subtitle">{escape(basename)}<br><small style="color:#666">Source: {escape(full_path)}</small></p>')
 
     # Stats
     user_msgs = sum(
