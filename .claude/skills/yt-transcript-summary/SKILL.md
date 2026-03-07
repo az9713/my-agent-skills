@@ -19,9 +19,7 @@ Analyze YouTube videos or local transcript files using Google Gemini API via the
 
 ## Script Location
 
-```
-C:\Users\simon\Downloads\colab_to_script\yt_analyze.py
-```
+`C:\Users\simon\Downloads\colab_to_script\yt_analyze.py`
 
 ## How to Build the Command
 
@@ -96,4 +94,4 @@ cd /c/Users/simon/Downloads/colab_to_script && python yt_analyze.py "https://www
 
 - `GOOGLE_API_KEY` must be set (in `.env` or environment)
 - `yt-dlp` must be installed (for fetching video metadata/titles)
-- Python dependencies: `google-genai`, `python-dotenv`, `jinja2`
+- Python dependencies: `pip install -r requirements.txt` (google-genai, python-dotenv, jinja2)
