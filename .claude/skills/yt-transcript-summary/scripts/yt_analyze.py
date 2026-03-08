@@ -201,7 +201,7 @@ def get_video_metadata(url):
     try:
         result = subprocess.run(
             ["yt-dlp", "--skip-download", "--print", "%(title)s", "--print", "%(channel)s", url],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True, text=True, timeout=120, ## changed 60 -> 120
         )
         lines = result.stdout.strip().split("\n")
         if len(lines) >= 2:
