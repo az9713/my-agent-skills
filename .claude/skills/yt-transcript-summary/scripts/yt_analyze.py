@@ -191,20 +191,28 @@ def sanitize_filename(name, max_len=100):
     return name[:max_len]
 
 
+def extract_video_id(url):
+    """Extract video ID from a YouTube URL as a fallback identifier."""
+    m = re.search(r'(?:v=|youtu\.be/)([\w-]{11})', url)
+    return m.group(1) if m else None
+
+
 def get_video_metadata(url):
     try:
         result = subprocess.run(
-            ["yt-dlp", "--skip-download", "--print", "%(title)s\n%(channel)s", url],
-            capture_output=True, text=True, timeout=30,
+            ["yt-dlp", "--skip-download", "--print", "%(title)s", "--print", "%(channel)s", url],
+            capture_output=True, text=True, timeout=60,
         )
         lines = result.stdout.strip().split("\n")
         if len(lines) >= 2:
             return lines[0].strip(), lines[1].strip()
-        elif len(lines) == 1:
+        elif len(lines) == 1 and lines[0].strip():
             return lines[0].strip(), "unknown_channel"
     except Exception as e:
         print(f"Warning: Could not fetch video metadata: {e}", file=sys.stderr)
-    return "video", "unknown_channel"
+    video_id = extract_video_id(url)
+    fallback_title = video_id if video_id else "video"
+    return fallback_title, "unknown_channel"
 
 
 def build_output_filename(url):
