@@ -35,7 +35,7 @@ python ~/.claude/skills/symphony-harness-rubric/scripts/evaluate_harness_rubric.
 If Python launcher is needed on Windows:
 
 ```powershell
-python C:\Users\simon\.claude\skills\symphony-harness-rubric\scripts\evaluate_harness_rubric.py `
+python "$env:USERPROFILE\.claude\skills\symphony-harness-rubric\scripts\evaluate_harness_rubric.py" `
   --repo-root . `
   --output .\HARNESS_ENGINEERING_EVALUATION.md
 ```
@@ -55,4 +55,3 @@ After writing the report:
 - The article is descriptive, not a formal compliance standard.
 - The evaluator uses evidence-based heuristics over repository files.
 - Always communicate that results are "best-effort inference" and should be reviewed by maintainers.
-
