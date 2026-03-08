@@ -15,7 +15,8 @@ from google import genai
 from google.genai import types
 from jinja2 import Template
 
-load_dotenv()
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_SCRIPT_DIR, ".env"))
 
 
 def get_api_key():
@@ -276,9 +277,12 @@ Examples:
     elif args.prompt:
         prompt = args.prompt
     else:
-        with open(args.prompt_file, "r", encoding="utf-8") as f:
+        # Resolve prompt file relative to the script's directory
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        prompt_path = args.prompt_file if os.path.isabs(args.prompt_file) else os.path.join(script_dir, args.prompt_file)
+        with open(prompt_path, "r", encoding="utf-8") as f:
             prompt = f.read()
-        print(f"Using prompt from {args.prompt_file}\n", file=sys.stderr)
+        print(f"Using prompt from {prompt_path}\n", file=sys.stderr)
 
     client = genai.Client(api_key=get_api_key())
     print(f"Model: {args.model}", file=sys.stderr)

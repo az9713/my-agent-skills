@@ -61,44 +61,46 @@ Parse the user's request for these inputs:
 
 ## Execution
 
-Run the command via `Bash` from the script's directory:
+Run the command via `Bash` from the **user's current working directory** (never `cd` into the script directory). Use the full path to the script:
 
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py <args>
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py <args>
 ```
 
-The script writes output to an auto-named `.md` file and prints the path to stderr. After execution, tell the user the output file path.
+The output `.md` file will be written to the user's current working directory. The script prints the output path to stderr. After execution, tell the user the output file path.
+
+**Important:** Never output files to the skill's scripts directory. Always run from the user's cwd.
 
 ## Examples
 
 **YouTube URL with default prompt:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123"
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www.youtube.com/watch?v=abc123"
 ```
 
 **Local transcript file:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py --file "/path/to/transcript.txt"
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py --file "/path/to/transcript.txt"
 ```
 
 **Custom inline prompt:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" -p "Extract all code snippets"
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www.youtube.com/watch?v=abc123" -p "Extract all code snippets"
 ```
 
 **Built-in preset:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --builtin takeaways
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www.youtube.com/watch?v=abc123" --builtin takeaways
 ```
 
 **Transcript mode with speakers:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --transcript --speakers "Alice" "Bob"
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www.youtube.com/watch?v=abc123" --transcript --speakers "Alice" "Bob"
 ```
 
 **Segment analysis:**
 ```bash
-cd ~/.claude/skills/yt-transcript-summary/scripts && python yt_analyze.py "https://www.youtube.com/watch?v=abc123" --start 01:30 --end 05:00 -p "Summarize this segment"
+python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www.youtube.com/watch?v=abc123" --start 01:30 --end 05:00 -p "Summarize this segment"
 ```
 
 ## Prerequisites
