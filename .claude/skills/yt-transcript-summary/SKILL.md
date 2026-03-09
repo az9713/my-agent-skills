@@ -106,5 +106,4 @@ python ~/.claude/skills/yt-transcript-summary/scripts/yt_analyze.py "https://www
 ## Prerequisites
 
 - `GOOGLE_API_KEY` must be set (in `.env` or environment)
-- `yt-dlp` must be installed (for fetching video metadata/titles)
 - Python dependencies: `pip install -r requirements.txt` (google-genai, python-dotenv, jinja2)

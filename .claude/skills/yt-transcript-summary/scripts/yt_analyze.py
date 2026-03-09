@@ -7,7 +7,6 @@ Analyze YouTube videos with custom prompts or generate transcripts.
 import argparse
 import os
 import re
-import subprocess
 import sys
 from datetime import datetime
 from dotenv import load_dotenv
@@ -197,26 +196,38 @@ def extract_video_id(url):
     return m.group(1) if m else None
 
 
-def get_video_metadata(url):
+def get_video_metadata_from_gemini(client, model, youtube_url):
+    """Extract video title and channel name using Gemini (no yt-dlp dependency)."""
     try:
-        result = subprocess.run(
-            ["yt-dlp", "--skip-download", "--print", "%(title)s", "--print", "%(channel)s", url],
-            capture_output=True, text=True, timeout=120, ## changed 60 -> 120
+        response = client.models.generate_content(
+            model=model,
+            contents=types.Content(
+                parts=[
+                    types.Part(text='Return ONLY two lines, nothing else:\nLine 1: the exact video title\nLine 2: the channel name'),
+                    types.Part(file_data=types.FileData(file_uri=youtube_url)),
+                ]
+            ),
         )
-        lines = result.stdout.strip().split("\n")
+        lines = response.text.strip().split("\n")
+        lines = [l.strip() for l in lines if l.strip()]
         if len(lines) >= 2:
-            return lines[0].strip(), lines[1].strip()
-        elif len(lines) == 1 and lines[0].strip():
-            return lines[0].strip(), "unknown_channel"
+            return lines[0], lines[1]
+        elif len(lines) == 1:
+            return lines[0], "unknown_channel"
     except Exception as e:
-        print(f"Warning: Could not fetch video metadata: {e}", file=sys.stderr)
-    video_id = extract_video_id(url)
+        print(f"Warning: Could not fetch video metadata from Gemini: {e}", file=sys.stderr)
+    video_id = extract_video_id(youtube_url)
     fallback_title = video_id if video_id else "video"
     return fallback_title, "unknown_channel"
 
 
-def build_output_filename(url):
-    title, channel = get_video_metadata(url)
+def build_output_filename(url, client=None, model=None):
+    if client and model:
+        title, channel = get_video_metadata_from_gemini(client, model, url)
+    else:
+        video_id = extract_video_id(url)
+        title = video_id if video_id else "video"
+        channel = "unknown_channel"
     date_str = datetime.now().strftime("%m-%d-%Y")
     safe_title = sanitize_filename(title, max_len=20)
     safe_channel = sanitize_filename(channel)
@@ -321,7 +332,7 @@ Examples:
             result = analyze_video_segment(client, args.model, args.url, prompt, start, end)
         else:
             result = analyze_video(client, args.model, args.url, prompt)
-        output_path = args.output if args.output else build_output_filename(args.url)
+        output_path = args.output if args.output else build_output_filename(args.url, client, args.model)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(result)
