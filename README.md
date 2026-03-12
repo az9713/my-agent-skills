@@ -1,6 +1,8 @@
 # my-agent-skills
 
-Fourteen personal skills for [Claude Code](https://claude.com/claude-code), plus an example audit report showing the skill-best-practices auditor in action.
+Sixteen personal skills for [Claude Code](https://claude.com/claude-code), plus an example audit report showing the skill-best-practices auditor in action.
+
+> **Note:** The `morning-brief` and `end-of-day-wrapup` skills are originally from the video ["I Set Up Claude Cowork to Work While I Sleep (Full Guide)"](https://www.youtube.com/watch?v=Namp-sV0UEw&t=8s).
 
 ## Skills
 
@@ -135,6 +137,20 @@ The skill covers the canonical Docker run pattern, a key-rules table, what-not-t
 **Files:**
 - `SKILL.md` — Problem explanation, canonical patterns, MOOSE-specific section, debugging checklist (153 lines)
 
+### morning-brief
+
+Generate a daily morning briefing HTML dashboard that summarizes your calendar, email, and news. Produces a self-contained HTML file in Apple Swiss Style with calendar overview, email summary (grouped by priority with draft replies), news highlights, and today's top 3 priorities.
+
+**Files:**
+- `SKILL.md` — Design system, page structure, CSS rules, greeting logic, workflow
+
+### end-of-day-wrapup
+
+End-of-day wrap-up that audits what Claude did automatically and what you did manually, then generates a beautiful HTML report with tomorrow's priority. The 4-step workflow scans for recent file changes, asks for user input, generates a structured text summary, and renders a dark-theme HTML dashboard with stats, sections for Cowork and user activity, combined progress, carried-forward items, tomorrow's #1 priority, and a reflection.
+
+**Files:**
+- `SKILL.md` — 4-step workflow, HTML template with dark theme design system, placeholder reference table, scheduling instructions, variations
+
 ### moose-simulation
 
 Full lifecycle skill for running MOOSE finite-element simulations on Windows via Docker. Covers prerequisites, input file authoring, Docker execution, output validation, visualization, and README documentation.
@@ -206,4 +222,6 @@ Skills activate automatically when Claude detects a matching request, or can be 
 /surveil                  # Launch agent team dashboard
 /docker-windows           # Docker on Windows without path mangling
 /moose-simulation         # Run MOOSE simulations via Docker
+/morning-briefing         # Generate morning briefing dashboard
+/wrapup                   # End-of-day wrap-up with HTML report
 ```
