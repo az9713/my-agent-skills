@@ -48,6 +48,23 @@ Parse the user's request for these inputs:
 
 **URL and `--file` are mutually exclusive** — the script enforces this.
 
+## Multiple URLs
+
+The user may provide multiple YouTube URLs in a single request, separated by commas, spaces, or newlines. For example:
+
+```
+/yt-transcript-summary https://youtube.com/watch?v=abc, https://youtube.com/watch?v=def, https://youtube.com/watch?v=ghi
+```
+
+When multiple URLs are detected:
+
+1. **Parse** all URLs from the input (split on commas, spaces, or newlines; filter to valid YouTube URLs).
+2. **Process each URL sequentially** — run a separate `python yt_analyze.py "URL" <shared-flags>` command for each URL. All other flags (e.g., `-p`, `--builtin`, `--transcript`) apply to every URL.
+3. **Report progress** — after each video completes, tell the user which video finished and its output file path before moving to the next.
+4. **Summarize at the end** — after all videos are processed, list all output file paths together.
+
+Do **not** run multiple URLs in parallel — the Gemini API may rate-limit concurrent requests.
+
 ## Prompt Resolution Order
 
 1. If the user says "transcript mode" or wants a transcript → use `--transcript`
