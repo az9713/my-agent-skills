@@ -1,4 +1,5 @@
 .env
 *.md
 !SKILL.md
+!README.md
 __pycache__/
