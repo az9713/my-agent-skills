@@ -225,3 +225,13 @@ Skills activate automatically when Claude detects a matching request, or can be 
 /morning-briefing         # Generate morning briefing dashboard
 /wrapup                   # End-of-day wrap-up with HTML report
 ```
+
+### excalidraw
+
+Base Excalidraw diagram skill for generating visual argument diagrams. Includes JSON generation, render pipeline, color palette, element templates, and a section-by-section workflow for both technical and conceptual diagrams.
+
+### excalidraw-sketch
+
+Hand-drawn editorial illustration style for Excalidraw. Creates sketchy, annotated, character-driven diagrams with a robot mascot — designed for AI workflow illustrations, technical comparisons, and concept explanations. Includes 4 reference sample images for style consistency. Builds on the base `excalidraw` skill.
+
+> Both excalidraw skills are based on [excalidraw-diagram-skill](https://github.com/coleam00/excalidraw-diagram-skill) by Cole Medin.
