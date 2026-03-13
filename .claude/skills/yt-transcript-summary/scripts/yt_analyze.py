@@ -1,7 +1,8 @@
 """
-YouTube Video Analyzer using Google Gemini API.
+YouTube Video & Web Content Analyzer using Google Gemini API.
 
-Analyze YouTube videos with custom prompts or generate transcripts.
+Analyze YouTube videos, web pages (blog posts, articles), or local files
+(TXT, HTML, PDF) with custom prompts or generate transcripts.
 """
 
 import argparse
@@ -9,6 +10,7 @@ import os
 import re
 import sys
 from datetime import datetime
+from urllib.parse import urlparse
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -16,6 +18,99 @@ from jinja2 import Template
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 load_dotenv(os.path.join(_SCRIPT_DIR, ".env"))
+
+YOUTUBE_HOSTS = {"youtube.com", "www.youtube.com", "m.youtube.com", "youtu.be", "www.youtu.be"}
+
+
+def is_youtube_url(url):
+    """Check if a URL is a YouTube video URL."""
+    try:
+        parsed = urlparse(url)
+        return parsed.hostname in YOUTUBE_HOSTS
+    except Exception:
+        return False
+
+
+def is_url(s):
+    """Check if a string looks like a URL."""
+    try:
+        parsed = urlparse(s)
+        return parsed.scheme in ("http", "https") and bool(parsed.hostname)
+    except Exception:
+        return False
+
+
+def fetch_web_content(url):
+    """Fetch a web page and extract its text content."""
+    import requests
+    from bs4 import BeautifulSoup
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+                       "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+    }
+    resp = requests.get(url, headers=headers, timeout=30)
+    resp.raise_for_status()
+
+    content_type = resp.headers.get("Content-Type", "")
+    if "pdf" in content_type:
+        return extract_pdf_from_bytes(resp.content)
+
+    soup = BeautifulSoup(resp.text, "html.parser")
+    # Remove non-content elements
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    text = soup.get_text(separator="\n", strip=True)
+    return text
+
+
+def read_local_file(file_path):
+    """Read a local file, handling different formats (txt, html, pdf)."""
+    ext = os.path.splitext(file_path)[1].lower()
+
+    if ext == ".pdf":
+        return extract_pdf_from_file(file_path)
+    elif ext in (".html", ".htm"):
+        return extract_text_from_html_file(file_path)
+    else:
+        # Default: read as plain text
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+
+
+def extract_pdf_from_file(file_path):
+    """Extract text from a local PDF file."""
+    import pdfplumber
+    text_parts = []
+    with pdfplumber.open(file_path) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text_parts.append(page_text)
+    return "\n\n".join(text_parts)
+
+
+def extract_pdf_from_bytes(content_bytes):
+    """Extract text from PDF bytes (e.g. fetched from a URL)."""
+    import io
+    import pdfplumber
+    text_parts = []
+    with pdfplumber.open(io.BytesIO(content_bytes)) as pdf:
+        for page in pdf.pages:
+            page_text = page.extract_text()
+            if page_text:
+                text_parts.append(page_text)
+    return "\n\n".join(text_parts)
+
+
+def extract_text_from_html_file(file_path):
+    """Extract text from a local HTML file."""
+    from bs4 import BeautifulSoup
+    with open(file_path, "r", encoding="utf-8") as f:
+        soup = BeautifulSoup(f.read(), "html.parser")
+    for tag in soup(["script", "style", "nav", "footer", "header", "aside"]):
+        tag.decompose()
+    return soup.get_text(separator="\n", strip=True)
 
 
 def get_api_key():
@@ -41,19 +136,32 @@ def analyze_video(client, model, youtube_url, prompt):
     return response.text
 
 
-def analyze_transcript_file(client, model, file_path, prompt):
-    with open(file_path, "r", encoding="utf-8") as f:
-        transcript_text = f.read()
+def analyze_text_content(client, model, text, prompt):
+    """Analyze text content (from a file, web page, etc.) with a prompt."""
     response = client.models.generate_content(
         model=model,
         contents=types.Content(
             parts=[
                 types.Part(text=prompt),
-                types.Part(text=transcript_text),
+                types.Part(text=text),
             ]
         ),
     )
     return response.text
+
+
+def analyze_transcript_file(client, model, file_path, prompt):
+    text = read_local_file(file_path)
+    return analyze_text_content(client, model, text, prompt)
+
+
+def analyze_web_page(client, model, url, prompt):
+    """Fetch a web page and analyze its text content."""
+    print(f"Fetching web content from: {url}", file=sys.stderr)
+    text = fetch_web_content(url)
+    if not text or len(text.strip()) < 50:
+        print(f"Warning: Very little text extracted from {url}", file=sys.stderr)
+    return analyze_text_content(client, model, text, prompt)
 
 
 def analyze_video_segment(client, model, youtube_url, prompt, start_seconds, end_seconds):
@@ -234,6 +342,18 @@ def build_output_filename(url, client=None, model=None):
     return f"{safe_title}_{safe_channel}_{date_str}.md"
 
 
+def build_web_output_filename(url):
+    """Build an output filename from a web URL's path."""
+    parsed = urlparse(url)
+    # Use the last path segment as a title hint
+    path_parts = [p for p in parsed.path.strip("/").split("/") if p]
+    title = path_parts[-1] if path_parts else parsed.hostname
+    date_str = datetime.now().strftime("%m-%d-%Y")
+    safe_title = sanitize_filename(title, max_len=30)
+    safe_host = sanitize_filename(parsed.hostname or "web", max_len=20)
+    return f"{safe_title}_{safe_host}_{date_str}.md"
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Analyze YouTube videos or transcript files using Google Gemini API",
@@ -250,8 +370,8 @@ Examples:
 """,
     )
     source = parser.add_mutually_exclusive_group(required=True)
-    source.add_argument("url", nargs="?", default=None, help="YouTube video URL")
-    source.add_argument("--file", "-f", help="Path to a local transcript file")
+    source.add_argument("url", nargs="?", default=None, help="YouTube URL or any web page URL")
+    source.add_argument("--file", "-f", help="Path to a local file (txt, html, pdf)")
     parser.add_argument(
         "-p", "--prompt", help="Custom prompt to send with the video"
     )
@@ -307,7 +427,7 @@ Examples:
     print(f"Model: {args.model}", file=sys.stderr)
 
     if args.file:
-        # Analyze a local transcript file
+        # Analyze a local file (txt, html, pdf)
         print(f"Analyzing file: {args.file}", file=sys.stderr)
         result = analyze_transcript_file(client, args.model, args.file, prompt)
         if args.output:
@@ -316,9 +436,9 @@ Examples:
             base = os.path.splitext(os.path.basename(args.file))[0]
             date_str = datetime.now().strftime("%m-%d-%Y")
             output_path = f"{sanitize_filename(base, max_len=20)}_{date_str}.md"
-    else:
+    elif args.url and is_youtube_url(args.url):
         # Analyze a YouTube video
-        print(f"Analyzing: {args.url}", file=sys.stderr)
+        print(f"Analyzing YouTube video: {args.url}", file=sys.stderr)
         if args.start or args.end:
             start = mmss_to_seconds(args.start) if args.start else 0
             end = mmss_to_seconds(args.end) if args.end else None
@@ -333,6 +453,14 @@ Examples:
         else:
             result = analyze_video(client, args.model, args.url, prompt)
         output_path = args.output if args.output else build_output_filename(args.url, client, args.model)
+    elif args.url and is_url(args.url):
+        # Analyze a web page (blog post, article, etc.)
+        print(f"Analyzing web page: {args.url}", file=sys.stderr)
+        result = analyze_web_page(client, args.model, args.url, prompt)
+        output_path = args.output if args.output else build_web_output_filename(args.url)
+    else:
+        print(f"Error: '{args.url}' is not a valid URL. Provide a URL or use --file.", file=sys.stderr)
+        sys.exit(1)
 
     with open(output_path, "w", encoding="utf-8") as f:
         f.write(result)
